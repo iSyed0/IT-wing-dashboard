@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Editor — IT Wing</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --border: #E0DED8;
+    --text: #1A1916;
+    --muted: #706E68;
+    --hint: #A8A6A0;
+    --green-bg: #D6EDCC; --green-text: #2A6614; --green-dot: #3E9022;
+    --amber-bg: #FAE8C0; --amber-text: #7A4E08; --amber-dot: #D4890A;
+    --red-bg: #F9D4D4; --red-text: #8B1F1F; --red-dot: #D63B3B;
+    --accent: #1A1916;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem; }
+
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hint);
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field { margin-bottom: 1rem; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; }
+  input[type=text], textarea, select {
+    width: 100%; font-family: var(--sans); font-size: 13px;
+    padding: 7px 10px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--text);
+    outline: none; transition: border-color 0.15s;
+  }
+  input[type=text]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 54px; line-height: 1.5; }
+  select { cursor: pointer; }
+
+  .project-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem;
+    margin-bottom: 10px;
+  }
+  .project-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .project-name-label {
+    font-size: 13px; font-weight: 500; flex: 1;
+  }
+  .rag-select {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    padding: 4px 8px; border-radius: 20px; border: none; cursor: pointer;
+    appearance: none; -webkit-appearance: none; outline: none;
+    min-width: 90px; text-align: center;
+  }
+  .rag-green { background: var(--green-bg); color: var(--green-text); }
+  .rag-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .rag-red   { background: var(--red-bg);   color: var(--red-text); }
+
+  .task-row {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr 1fr 0.9fr 0.9fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .task-row input, .task-row select { margin: 0; }
+
+  .task-header {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr 1fr 0.9fr 0.9fr auto;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .task-header span {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--hint);
+  }
+
+  .remove-btn {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--hint); font-size: 14px; width: 28px; height: 28px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .remove-btn:hover { border-color: var(--red-dot); color: var(--red-text); background: var(--red-bg); }
+
+  .add-btn {
+    background: none; border: 1px dashed var(--border); border-radius: 4px;
+    color: var(--muted); font-size: 12px; padding: 6px 14px;
+    cursor: pointer; transition: all 0.15s; margin-top: 4px;
+    font-family: var(--sans);
+  }
+  .add-btn:hover { border-color: var(--accent); color: var(--text); background: var(--bg); }
+
+  .generate-btn {
+    background: var(--accent); color: white; border: none;
+    font-family: var(--sans); font-size: 14px; font-weight: 500;
+    padding: 12px 32px; border-radius: 4px; cursor: pointer;
+    transition: opacity 0.15s; width: 100%; margin-top: 0.5rem;
+  }
+  .generate-btn:hover { opacity: 0.8; }
+
+  .section-heading {
+    font-size: 15px; font-weight: 500; margin-bottom: 1rem; margin-top: 1.5rem;
+  }
+  .section-heading:first-child { margin-top: 0; }
+
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+    .task-row { grid-template-columns: 1fr 1fr; }
+    .task-header { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>IT Wing — Dashboard Editor</h1>
+<p class="subtitle">Fill in the fields below, then click Generate. No code editing needed.</p>
+
+<div class="card">
+  <div class="card-title">Week & header</div>
+  <div class="two-col">
+    <div class="field">
+      <label>Week date (shown in header)</label>
+      <input type="text" id="weekDate" placeholder="e.g. 7 Apr 2026">
+    </div>
+    <div class="field">
+      <label>Department / prepared by</label>
+      <input type="text" id="dept" value="IT Wing" placeholder="IT Wing">
+    </div>
+  </div>
+</div>
+
+<p class="section-heading">Project RAG status</p>
+
+<div id="projects">
+  <div class="project-block" data-idx="0">
+    <div class="project-header">
+      <input type="text" class="project-name" value="ERP" style="max-width:160px;" placeholder="Project name">
+      <select class="rag-select rag-amber" onchange="updateRagStyle(this)">
+        <option value="green">Green</option>
+        <option value="amber" selected>Amber</option>
+        <option value="red">Red</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (one line)</label>
+      <input type="text" class="project-note" value="Module integration delayed 1 week. SLA review pending." placeholder="Short status note">
+    </div>
+  </div>
+
+  <div class="project-block" data-idx="1">
+    <div class="project-header">
+      <input type="text" class="project-name" value="AI Pilot" style="max-width:160px;" placeholder="Project name">
+      <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+        <option value="green" selected>Green</option>
+        <option value="amber">Amber</option>
+        <option value="red">Red</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (one line)</label>
+      <input type="text" class="project-note" value="PoC deployed. User testing in progress." placeholder="Short status note">
+    </div>
+  </div>
+
+  <div class="project-block" data-idx="2">
+    <div class="project-header">
+      <input type="text" class="project-name" value="Beep" style="max-width:160px;" placeholder="Project name">
+      <select class="rag-select rag-red" onchange="updateRagStyle(this)">
+        <option value="green">Green</option>
+        <option value="amber">Amber</option>
+        <option value="red" selected>Red</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (one line)</label>
+      <input type="text" class="project-note" value="Blocked. Vendor unresponsive for 2 weeks." placeholder="Short status note">
+    </div>
+  </div>
+
+  <div class="project-block" data-idx="3">
+    <div class="project-header">
+      <input type="text" class="project-name" value="Infrastructure" style="max-width:160px;" placeholder="Project name">
+      <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+        <option value="green" selected>Green</option>
+        <option value="amber">Amber</option>
+        <option value="red">Red</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (one line)</label>
+      <input type="text" class="project-note" value="All servers nominal. No incidents." placeholder="Short status note">
+    </div>
+  </div>
+
+  <div class="project-block" data-idx="4">
+    <div class="project-header">
+      <input type="text" class="project-name" value="Training" style="max-width:160px;" placeholder="Project name">
+      <select class="rag-select rag-amber" onchange="updateRagStyle(this)">
+        <option value="green">Green</option>
+        <option value="amber" selected>Amber</option>
+        <option value="red">Red</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (one line)</label>
+      <input type="text" class="project-note" value="Low attendance last session. Rescheduling underway." placeholder="Short status note">
+    </div>
+  </div>
+
+  <div class="project-block" data-idx="5">
+    <div class="project-header">
+      <input type="text" class="project-name" value="Morocco Study" style="max-width:160px;" placeholder="Project name">
+      <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+        <option value="green" selected>Green</option>
+        <option value="amber">Amber</option>
+        <option value="red">Red</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (one line)</label>
+      <input type="text" class="project-note" value="Report draft under senior review." placeholder="Short status note">
+    </div>
+  </div>
+</div>
+
+<p class="section-heading">Task list by personnel</p>
+
+<div class="card">
+  <div class="task-header">
+    <span>Person</span><span>Task</span><span>Project</span><span>Due date</span><span>Status</span><span></span>
+  </div>
+  <div id="tasks">
+    <div class="task-row">
+      <input type="text" placeholder="Name" value="Ali">
+      <input type="text" placeholder="Task description" value="Finalize ERP vendor SLA">
+      <input type="text" placeholder="Project" value="ERP">
+      <input type="text" placeholder="Due date" value="10 Apr">
+      <select class="rag-select rag-amber" onchange="updateRagStyle(this)">
+        <option value="green">Green</option><option value="amber" selected>Amber</option><option value="red">Red</option>
+      </select>
+      <button class="remove-btn" onclick="removeTask(this)">✕</button>
+    </div>
+    <div class="task-row">
+      <input type="text" placeholder="Name" value="Sara">
+      <input type="text" placeholder="Task description" value="Run AI pilot user tests">
+      <input type="text" placeholder="Project" value="AI Pilot">
+      <input type="text" placeholder="Due date" value="9 Apr">
+      <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+        <option value="green" selected>Green</option><option value="amber">Amber</option><option value="red">Red</option>
+      </select>
+      <button class="remove-btn" onclick="removeTask(this)">✕</button>
+    </div>
+    <div class="task-row">
+      <input type="text" placeholder="Name" value="Usman">
+      <input type="text" placeholder="Task description" value="Follow up with Beep vendor">
+      <input type="text" placeholder="Project" value="Beep">
+      <input type="text" placeholder="Due date" value="Overdue">
+      <select class="rag-select rag-red" onchange="updateRagStyle(this)">
+        <option value="green">Green</option><option value="amber">Amber</option><option value="red" selected>Red</option>
+      </select>
+      <button class="remove-btn" onclick="removeTask(this)">✕</button>
+    </div>
+    <div class="task-row">
+      <input type="text" placeholder="Name" value="Sara">
+      <input type="text" placeholder="Task description" value="Patch server rack B">
+      <input type="text" placeholder="Project" value="Infrastructure">
+      <input type="text" placeholder="Due date" value="11 Apr">
+      <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+        <option value="green" selected>Green</option><option value="amber">Amber</option><option value="red">Red</option>
+      </select>
+      <button class="remove-btn" onclick="removeTask(this)">✕</button>
+    </div>
+    <div class="task-row">
+      <input type="text" placeholder="Name" value="Zara">
+      <input type="text" placeholder="Task description" value="Coordinate next training session">
+      <input type="text" placeholder="Project" value="Training">
+      <input type="text" placeholder="Due date" value="14 Apr">
+      <select class="rag-select rag-amber" onchange="updateRagStyle(this)">
+        <option value="green">Green</option><option value="amber" selected>Amber</option><option value="red">Red</option>
+      </select>
+      <button class="remove-btn" onclick="removeTask(this)">✕</button>
+    </div>
+    <div class="task-row">
+      <input type="text" placeholder="Name" value="Ali">
+      <input type="text" placeholder="Task description" value="Review Morocco report draft">
+      <input type="text" placeholder="Project" value="Morocco Study">
+      <input type="text" placeholder="Due date" value="12 Apr">
+      <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+        <option value="green" selected>Green</option><option value="amber">Amber</option><option value="red">Red</option>
+      </select>
+      <button class="remove-btn" onclick="removeTask(this)">✕</button>
+    </div>
+  </div>
+  <button class="add-btn" onclick="addTask()">+ Add task row</button>
+</div>
+
+<button class="generate-btn" onclick="generate()">Generate dashboard &amp; download</button>
+
+<script>
+function updateRagStyle(sel) {
+  sel.className = 'rag-select rag-' + sel.value;
+}
+
+function removeTask(btn) {
+  btn.closest('.task-row').remove();
+}
+
+function addTask() {
+  const row = document.createElement('div');
+  row.className = 'task-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Name">
+    <input type="text" placeholder="Task description">
+    <input type="text" placeholder="Project">
+    <input type="text" placeholder="Due date">
+    <select class="rag-select rag-green" onchange="updateRagStyle(this)">
+      <option value="green" selected>Green</option><option value="amber">Amber</option><option value="red">Red</option>
+    </select>
+    <button class="remove-btn" onclick="removeTask(this)">✕</button>`;
+  document.getElementById('tasks').appendChild(row);
+}
+
+function initials(name) {
+  return name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function ragColors(s) {
+  const map = {
+    green: { dot: '#3E9022', label: 'Green', labelColor: '#2A6614', bg: '#D6EDCC', pillClass: 'green' },
+    amber: { dot: '#D4890A', label: 'Amber', labelColor: '#7A4E08', bg: '#FAE8C0', pillClass: 'amber' },
+    red:   { dot: '#D63B3B', label: 'Red',   labelColor: '#8B1F1F', bg: '#F9D4D4', pillClass: 'red' }
+  };
+  return map[s] || map.green;
+}
+
+function generate() {
+  const weekDate = document.getElementById('weekDate').value || new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+  const dept = document.getElementById('dept').value || 'IT Wing';
+
+  const projectBlocks = [...document.querySelectorAll('#projects .project-block')];
+  const projects = projectBlocks.map(b => ({
+    name: b.querySelector('.project-name').value,
+    status: b.querySelector('.rag-select').value,
+    note: b.querySelector('.project-note').value
+  }));
+
+  const taskRows = [...document.querySelectorAll('#tasks .task-row')];
+  const tasks = taskRows.map(r => {
+    const inputs = r.querySelectorAll('input');
+    return {
+      person: inputs[0].value,
+      task: inputs[1].value,
+      project: inputs[2].value,
+      due: inputs[3].value,
+      status: r.querySelector('select').value
+    };
+  }).filter(t => t.person || t.task);
+
+  const counts = { green: 0, amber: 0, red: 0 };
+  projects.forEach(p => counts[p.status]++);
+
+  const onTrackNames = projects.filter(p => p.status === 'green').map(p => p.name).join(' · ') || '—';
+  const atRiskNames  = projects.filter(p => p.status === 'amber').map(p => p.name).join(' · ') || '—';
+  const blockedNames = projects.filter(p => p.status === 'red').map(p => p.name).join(' · ') || '—';
+
+  const projectCardsHTML = projects.map(p => {
+    const c = ragColors(p.status);
+    return `
+        <div class="rag-card ${p.status}">
+          <div class="rag-project">${p.name}</div>
+          <div class="rag-status">
+            <div class="dot"></div>
+            <span class="rag-label">${c.label}</span>
+          </div>
+          <div class="rag-note">${p.note}</div>
+        </div>`;
+  }).join('');
+
+  const taskRowsHTML = tasks.map(t => {
+    const ini = initials(t.person);
+    const isOverdue = t.due.toLowerCase().includes('overdue');
+    const dueClass = isOverdue ? 'due-date overdue' : 'due-date';
+    return `
+          <tr>
+            <td>
+              <div class="person-cell">
+                <div class="person-badge">${ini}</div>
+                <span class="person-name">${t.person}</span>
+              </div>
+            </td>
+            <td>${t.task}</td>
+            <td>${t.project}</td>
+            <td><span class="${dueClass}">${t.due}</span></td>
+            <td><span class="pill ${t.status}">${ragColors(t.status).label}</span></td>
+          </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Wing — Weekly Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F5F4F0; --surface: #FFFFFF; --border: #E0DED8;
+    --text-primary: #1A1916; --text-secondary: #706E68; --text-muted: #A8A6A0;
+    --green-bg: #D6EDCC; --green-text: #2A6614; --green-dot: #3E9022;
+    --amber-bg: #FAE8C0; --amber-text: #7A4E08; --amber-dot: #D4890A;
+    --red-bg: #F9D4D4; --red-text: #8B1F1F; --red-dot: #D63B3B;
+    --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  @media print { body { background: white !important; } .no-print { display: none !important; } .page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; } }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text-primary); min-height: 100vh; padding: 2rem; }
+  .page { background: var(--surface); max-width: 960px; margin: 0 auto; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .header { display: grid; grid-template-columns: 1fr auto; align-items: end; padding: 2rem 2.5rem 1.5rem; border-bottom: 2px solid var(--text-primary); gap: 1rem; }
+  .org-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+  .dash-title { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+  .header-meta { text-align: right; }
+  .week-label { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .week-date { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+  .body { padding: 2rem 2.5rem 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .section-heading { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .rag-section { grid-column: 1 / -1; }
+  .rag-grid { display: grid; grid-template-columns: repeat(${Math.min(projects.length, 6)}, 1fr); gap: 10px; }
+  .rag-card { border: 1px solid var(--border); border-radius: 3px; padding: 14px 14px 12px; position: relative; overflow: hidden; }
+  .rag-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .rag-card.green::before { background: var(--green-dot); }
+  .rag-card.amber::before { background: var(--amber-dot); }
+  .rag-card.red::before   { background: var(--red-dot); }
+  .rag-project { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; }
+  .rag-status { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .green .dot { background: var(--green-dot); } .amber .dot { background: var(--amber-dot); } .red .dot { background: var(--red-dot); }
+  .rag-label { font-family: var(--mono); font-size: 11px; font-weight: 500; }
+  .green .rag-label { color: var(--green-text); } .amber .rag-label { color: var(--amber-text); } .red .rag-label { color: var(--red-text); }
+  .rag-note { font-size: 10.5px; color: var(--text-muted); line-height: 1.45; }
+  .personnel-section { grid-column: 1 / -1; }
+  .task-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .task-table thead tr { border-bottom: 1.5px solid var(--text-primary); }
+  .task-table th { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 0 12px 8px 0; text-align: left; font-weight: 400; }
+  .task-table th:last-child { text-align: center; }
+  .task-table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .task-table td:last-child { text-align: center; }
+  .task-table tr:last-child td { border-bottom: none; }
+  .person-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); font-family: var(--mono); font-size: 9px; font-weight: 500; color: var(--text-secondary); }
+  .person-cell { display: flex; align-items: center; gap: 8px; }
+  .person-name { font-weight: 500; font-size: 12.5px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-family: var(--mono); font-size: 9.5px; font-weight: 500; letter-spacing: 0.04em; }
+  .pill.green { background: var(--green-bg); color: var(--green-text); }
+  .pill.amber { background: var(--amber-bg); color: var(--amber-text); }
+  .pill.red   { background: var(--red-bg);   color: var(--red-text); }
+  .due-date { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
+  .due-date.overdue { color: var(--red-text); font-weight: 500; }
+  .summary-section { grid-column: 1 / -1; display: flex; gap: 10px; }
+  .summary-card { flex: 1; border: 1px solid var(--border); border-radius: 3px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .summary-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 15px; font-weight: 500; flex-shrink: 0; }
+  .summary-card.green .summary-dot { background: var(--green-bg); color: var(--green-text); }
+  .summary-card.amber .summary-dot { background: var(--amber-bg); color: var(--amber-text); }
+  .summary-card.red   .summary-dot { background: var(--red-bg);   color: var(--red-text); }
+  .summary-text { font-size: 12px; color: var(--text-secondary); }
+  .summary-text strong { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .footer { border-top: 1px solid var(--border); padding: 1rem 2.5rem; display: flex; justify-content: space-between; align-items: center; }
+  .footer-text { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; }
+  .print-btn { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--text-primary); color: white; border: none; padding: 6px 16px; border-radius: 2px; cursor: pointer; }
+  .print-btn:hover { opacity: 0.75; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="org-label">Parliament of Pakistan · ${dept}</div>
+      <div class="dash-title">Weekly Status Dashboard</div>
+    </div>
+    <div class="header-meta">
+      <div class="week-label">Week of</div>
+      <div class="week-date">${weekDate}</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="summary-section">
+      <div class="summary-card green">
+        <div class="summary-dot">${counts.green}</div>
+        <div class="summary-text"><strong>On track</strong>${onTrackNames}</div>
+      </div>
+      <div class="summary-card amber">
+        <div class="summary-dot">${counts.amber}</div>
+        <div class="summary-text"><strong>At risk</strong>${atRiskNames}</div>
+      </div>
+      <div class="summary-card red">
+        <div class="summary-dot">${counts.red}</div>
+        <div class="summary-text"><strong>Blocked</strong>${blockedNames}</div>
+      </div>
+    </div>
+    <div class="rag-section">
+      <div class="section-heading">Project status</div>
+      <div class="rag-grid">${projectCardsHTML}</div>
+    </div>
+    <div class="personnel-section">
+      <div class="section-heading">Task list by personnel</div>
+      <table class="task-table">
+        <thead><tr><th>Person</th><th>Task</th><th>Project</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody>${taskRowsHTML}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-text">${dept} &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; Prepared every Monday</div>
+    <button class="print-btn no-print" onclick="window.print()">Print / Save PDF</button>
+  </div>
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'it_wing_dashboard_' + weekDate.replace(/\s/g, '_') + '.html';
+  a.click();
+}
+
+document.getElementById('weekDate').value = new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+</script>
+</body>
+</html>
