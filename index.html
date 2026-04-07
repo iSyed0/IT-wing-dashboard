@@ -551,7 +551,98 @@ function generate() {
   a.click();
 }
 
-document.getElementById('weekDate').value = new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+const SAVE_KEY = 'itwing_dashboard_state';
+
+function collectState() {
+  const projects = [...document.querySelectorAll('#projects .project-block')].map(b => ({
+    name: b.querySelector('.project-name').value,
+    status: b.querySelector('.rag-select').value,
+    note: b.querySelector('.project-note').value
+  }));
+  const tasks = [...document.querySelectorAll('#tasks .task-row')].map(r => {
+    const inputs = r.querySelectorAll('input');
+    return {
+      person: inputs[0].value,
+      task: inputs[1].value,
+      project: inputs[2].value,
+      due: inputs[3].value,
+      status: r.querySelector('select').value
+    };
+  });
+  return {
+    weekDate: document.getElementById('weekDate').value,
+    dept: document.getElementById('dept').value,
+    projects,
+    tasks
+  };
+}
+
+function saveState() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(collectState())); } catch(e) {}
+}
+
+function buildTaskRow(t) {
+  const row = document.createElement('div');
+  row.className = 'task-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Name" value="${t.person||''}">
+    <input type="text" placeholder="Task description" value="${t.task||''}">
+    <input type="text" placeholder="Project" value="${t.project||''}">
+    <input type="text" placeholder="Due date" value="${t.due||''}">
+    <select class="rag-select rag-${t.status||'green'}" onchange="updateRagStyle(this)">
+      <option value="green"${(t.status||'green')==='green'?' selected':''}>Green</option>
+      <option value="amber"${t.status==='amber'?' selected':''}>Amber</option>
+      <option value="red"${t.status==='red'?' selected':''}>Red</option>
+    </select>
+    <button class="remove-btn" onclick="removeTask(this)">✕</button>`;
+  return row;
+}
+
+function loadState() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e) {}
+  if (!saved) {
+    document.getElementById('weekDate').value = new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+    return;
+  }
+
+  document.getElementById('weekDate').value = saved.weekDate || '';
+  document.getElementById('dept').value = saved.dept || 'IT Wing';
+
+  if (saved.projects && saved.projects.length) {
+    const blocks = document.querySelectorAll('#projects .project-block');
+    saved.projects.forEach((p, i) => {
+      if (blocks[i]) {
+        blocks[i].querySelector('.project-name').value = p.name || '';
+        const sel = blocks[i].querySelector('.rag-select');
+        sel.value = p.status || 'green';
+        updateRagStyle(sel);
+        blocks[i].querySelector('.project-note').value = p.note || '';
+      }
+    });
+  }
+
+  if (saved.tasks && saved.tasks.length) {
+    const container = document.getElementById('tasks');
+    container.innerHTML = '';
+    saved.tasks.forEach(t => container.appendChild(buildTaskRow(t)));
+  }
+}
+
+document.addEventListener('input', saveState);
+document.addEventListener('change', saveState);
+
+const _origAddTask = addTask;
+addTask = function() { _origAddTask(); saveState(); };
+const _origRemoveTask = removeTask;
+removeTask = function(btn) { _origRemoveTask(btn); saveState(); };
+
+loadState();
+
+const savedNotice = document.createElement('div');
+savedNotice.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--hint);text-align:right;margin-top:8px;';
+savedNotice.textContent = 'Changes are auto-saved in this browser.';
+document.querySelector('.generate-btn').after(savedNotice);
 </script>
 </body>
 </html>
